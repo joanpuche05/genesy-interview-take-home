@@ -605,6 +605,27 @@ button:focus-visible {
   line-height: 1.4;
 }
 
+.available-fields-info {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background-color: rgba(100, 108, 255, 0.05);
+  border: 1px solid rgba(100, 108, 255, 0.2);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.available-fields-label {
+  color: #646cff;
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+.available-fields-list {
+  color: rgba(255, 255, 255, 0.8);
+  font-family: 'Courier New', monospace;
+}
+
 .template-api-error {
   margin-bottom: 1rem;
   padding: 0.75rem;
@@ -836,6 +857,19 @@ button:focus-visible {
     background-color: rgba(220, 53, 69, 0.05);
     border: 1px solid rgba(220, 53, 69, 0.2);
     color: #dc3545;
+  }
+
+  .available-fields-info {
+    background-color: rgba(100, 108, 255, 0.03);
+    border: 1px solid rgba(100, 108, 255, 0.15);
+  }
+
+  .available-fields-label {
+    color: #646cff;
+  }
+
+  .available-fields-list {
+    color: rgba(0, 0, 0, 0.7);
   }
 
   .template-api-error {

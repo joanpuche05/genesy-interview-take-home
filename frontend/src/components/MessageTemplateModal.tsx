@@ -40,9 +40,26 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
       return false
     }
 
-    const fieldPattern = /\{(firstName|lastName|email|jobTitle|countryCode|companyName)\}/
-    if (!fieldPattern.test(template)) {
+    // Define valid field names
+    const validFields = new Set(['firstName', 'lastName', 'email', 'jobTitle', 'countryCode', 'companyName', 'message'])
+    
+    // Extract all field names from template
+    const fieldPattern = /\{(\w+)\}/g
+    const foundFields = new Set<string>()
+    let match
+    while ((match = fieldPattern.exec(template)) !== null) {
+      foundFields.add(match[1])
+    }
+    
+    if (foundFields.size === 0) {
       setValidationError('Template must contain at least one field placeholder like {firstName}, {lastName}, etc.')
+      return false
+    }
+    
+    // Check for invalid field names
+    const invalidFields = Array.from(foundFields).filter(field => !validFields.has(field))
+    if (invalidFields.length > 0) {
+      setValidationError(`Invalid field${invalidFields.length > 1 ? 's' : ''}: {${invalidFields.join('}, {')}}`)
       return false
     }
 
@@ -215,6 +232,13 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
                 {validationError}
               </div>
             )}
+            
+            <div className="available-fields-info">
+              <span className="available-fields-label">Available fields:</span>
+              <span className="available-fields-list">
+                {'{firstName}, {lastName}, {email}, {jobTitle}, {countryCode}, {companyName}, {message}'}
+              </span>
+            </div>
           </div>
 
           {generationSummary && (
@@ -245,7 +269,9 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
                     Message for <strong>{error.leadName}</strong> was not generated because{' '}
                     {error.error.toLowerCase().includes('missing') 
                       ? `these fields are missing: ${error.error.replace(/^Missing field[s]?: /i, '')}`
-                      : error.error.toLowerCase()
+                      : error.error.toLowerCase().includes('not available') || error.error.toLowerCase().includes('invalid')
+                        ? `${error.error.toLowerCase()}`
+                        : error.error.toLowerCase()
                     }
                   </div>
                 ))}

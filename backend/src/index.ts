@@ -133,12 +133,24 @@ app.post('/leads/generate-messages', async (req: Request, res: Response) => {
       })
     }
 
+    // Define valid field names from lead model
+    const validFields = new Set(['firstName', 'lastName', 'email', 'jobTitle', 'countryCode', 'companyName', 'message'])
+    
     // Extract field names from template using regex
     const fieldPattern = /\{(\w+)\}/g
     const requiredFields = new Set<string>()
     let match
     while ((match = fieldPattern.exec(template)) !== null) {
       requiredFields.add(match[1])
+    }
+    
+    // Check for invalid field names
+    const invalidFields = Array.from(requiredFields).filter(field => !validFields.has(field))
+    if (invalidFields.length > 0) {
+      return res.status(400).json({
+        error: 'Invalid template fields',
+        details: `Field${invalidFields.length > 1 ? 's' : ''} not available: ${invalidFields.join(', ')}. Valid fields are: ${Array.from(validFields).join(', ')}`
+      })
     }
 
     // Fetch leads from database
