@@ -1,6 +1,6 @@
 import genesyLogo from './assets/genesy-ai-logo.svg'
 import { Counter } from './components/Counter'
-import { LeadsList } from './components/LeadsList'
+import { LeadsTable } from './components/LeadsTable'
 
 function App() {
   return (
@@ -13,7 +13,7 @@ function App() {
       <h1 className="title">Genesy AI</h1>
       <Counter />
 
-      <LeadsList />
+      <LeadsTable />
     </main>
   )
 }
