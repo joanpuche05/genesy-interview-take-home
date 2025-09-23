@@ -7,6 +7,7 @@ app.use(express.json())
 app.use(function (req, res, next) {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
   next()
 })
 
@@ -64,6 +65,46 @@ app.delete('/leads/:id', async (req: Request, res: Response) => {
     },
   })
   res.json()
+})
+
+app.post('/leads/bulk-delete', async (req: Request, res: Response) => {
+  try {
+    const { leadIds } = req.body
+
+    if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        details: 'leadIds must be a non-empty array of numbers'
+      })
+    }
+
+    const validIds = leadIds.filter(id => typeof id === 'number' && id > 0)
+    if (validIds.length !== leadIds.length) {
+      return res.status(400).json({
+        error: 'Invalid lead IDs',
+        details: 'All leadIds must be positive numbers'
+      })
+    }
+
+    const deleteResult = await prisma.lead.deleteMany({
+      where: {
+        id: {
+          in: validIds,
+        },
+      },
+    })
+
+    res.status(200).json({
+      deletedCount: deleteResult.count,
+      message: `Successfully deleted ${deleteResult.count} lead(s)`
+    })
+  } catch (error) {
+    console.error('Bulk delete error:', error)
+    res.status(500).json({
+      error: 'Internal server error',
+      details: 'Failed to delete leads'
+    })
+  }
 })
 
 app.listen(4000, () => {

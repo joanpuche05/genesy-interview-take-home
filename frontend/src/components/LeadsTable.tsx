@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
 import { FC, useState, useRef, useEffect } from 'react'
 import { api } from '../api'
+import { useApiMutation } from '../api/mutations/useApiMutation'
 
 export const LeadsTable: FC = () => {
   const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set())
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const selectAllRef = useRef<HTMLInputElement>(null)
 
   const leads = useQuery({
     queryKey: ['leads', 'getMany'],
     queryFn: async () => api.leads.getMany(),
   })
+
+  const bulkDeleteMutation = useApiMutation('leads.bulkDelete')
 
   const handleSelectLead = (leadId: number, checked: boolean) => {
     const newSelection = new Set(selectedLeads)
@@ -28,6 +32,24 @@ export const LeadsTable: FC = () => {
     } else {
       setSelectedLeads(new Set())
     }
+  }
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true)
+  }
+
+  const handleDeleteConfirm = () => {
+    const leadIds = Array.from(selectedLeads)
+    bulkDeleteMutation.mutate({ leadIds }, {
+      onSuccess: () => {
+        setSelectedLeads(new Set())
+        setShowDeleteConfirm(false)
+      }
+    })
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false)
   }
 
   const isAllSelected = leads.data ? selectedLeads.size === leads.data.length && leads.data.length > 0 : false
@@ -51,11 +73,53 @@ export const LeadsTable: FC = () => {
       <div className="leads-table-header">
         <h2 className="leads-table-title">All leads</h2>
         {selectedLeads.size > 0 && (
-          <div className="selection-counter">
-            {selectedLeads.size} selected
+          <div className="selection-actions">
+            <div className="selection-counter">
+              {selectedLeads.size} selected
+            </div>
+            <button
+              className="delete-button"
+              onClick={handleDeleteClick}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </button>
           </div>
         )}
       </div>
+
+      {showDeleteConfirm && (
+        <div className="delete-confirmation-overlay">
+          <div className="delete-confirmation-dialog">
+            <h3>Confirm Delete</h3>
+            <p>
+              Are you sure you want to delete {selectedLeads.size} lead{selectedLeads.size > 1 ? 's' : ''}? 
+              This action cannot be undone.
+            </p>
+            <div className="confirmation-buttons">
+              <button
+                className="cancel-button"
+                onClick={handleDeleteCancel}
+                disabled={bulkDeleteMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button
+                className="confirm-delete-button"
+                onClick={handleDeleteConfirm}
+                disabled={bulkDeleteMutation.isPending}
+              >
+                {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+            {bulkDeleteMutation.isError && (
+              <div className="delete-error">
+                Error: {bulkDeleteMutation.error?.message || 'Failed to delete leads'}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="leads-table-wrapper">
         <table className="leads-table">
