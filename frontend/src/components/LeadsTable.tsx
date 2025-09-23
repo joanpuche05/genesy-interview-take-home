@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { FC, useState, useRef, useEffect } from 'react'
 import { api } from '../api'
 import { useApiMutation } from '../api/mutations/useApiMutation'
+import { MessageCellWrapper } from './MessageCell'
 
 export const LeadsTable: FC = () => {
   const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set())
@@ -157,7 +158,9 @@ export const LeadsTable: FC = () => {
                 <td>{lead.firstName}</td>
                 <td>{lead.lastName || '-'}</td>
                 <td>{lead.countryCode || '-'}</td>
-                <td>-</td>
+                <td className="message-column">
+                  <MessageCellWrapper message={lead.message} />
+                </td>
                 <td>{formatDate(lead.createdAt)}</td>
               </tr>
             ))}

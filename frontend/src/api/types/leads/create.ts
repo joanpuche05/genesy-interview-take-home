@@ -13,4 +13,5 @@ export type LeadsCreateOutput = {
   jobTitle: string | null
   countryCode: string | null
   companyName: string | null
+  message: string | null
 }

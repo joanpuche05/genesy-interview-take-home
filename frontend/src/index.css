@@ -253,6 +253,54 @@ button:focus-visible {
 }
 
 /* --------------------------------- */
+/* Message Cell Styles */
+/* --------------------------------- */
+
+.message-column {
+  width: 300px;
+  max-width: 300px;
+}
+
+.message-cell {
+  display: block;
+  min-height: 24px;
+}
+
+.message-content {
+  word-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+.message-content.expandable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.message-content.expandable:hover {
+  color: #646cff;
+}
+
+.no-message {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+
+/* Light mode styles */
+@media (prefers-color-scheme: light) {
+  .no-message {
+    color: rgba(0, 0, 0, 0.5);
+  }
+
+  .message-content.expandable:hover {
+    color: #4c6fff;
+  }
+}
+
+/* --------------------------------- */
 /* Selection Actions & Delete Dialog */
 /* --------------------------------- */
 
