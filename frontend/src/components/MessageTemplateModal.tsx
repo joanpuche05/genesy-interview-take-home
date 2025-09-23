@@ -25,7 +25,7 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
   leadsData,
   onSuccess,
 }) => {
-  const [template, setTemplate] = useState('')
+  const [template, setTemplate] = useState('Hi {firstName}, I\'m doing a survey. \n How would you rate working in {companyName} as a {jobTitle}, from 0 to 10?')
   const [validationError, setValidationError] = useState('')
   const [detailedErrors, setDetailedErrors] = useState<DetailedError[]>([])
   const [generationSummary, setGenerationSummary] = useState<{successCount: number, totalCount: number} | null>(null)
@@ -116,7 +116,7 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
   }
 
   const handleClose = () => {
-    setTemplate('')
+    setTemplate('Hi {firstName}, I\'m doing a survey. \n How would you rate working in {companyName} as a {jobTitle}, from 0 to 10?')
     setValidationError('')
     setDetailedErrors([])
     setGenerationSummary(null)
@@ -222,7 +222,6 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
               className="template-textarea"
               value={template}
               onChange={(e) => handleTemplateChange(e.target.value)}
-              placeholder="Enter message template using {firstName}, {lastName}, {email}, {jobTitle}, {countryCode}, {companyName}"
               disabled={isLoading}
               rows={4}
               aria-describedby={validationError ? "template-error" : undefined}
