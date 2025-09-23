@@ -25,7 +25,7 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
   leadsData,
   onSuccess,
 }) => {
-  const [template, setTemplate] = useState('Hi {firstName}, I\'m doing a survey. \n How would you rate working in {companyName} as a {jobTitle}, from 0 to 10?')
+  const [template, setTemplate] = useState('Hi {firstName}, I\'m doing a survey.\n\nHow would you rate working in {companyName} as a {jobTitle}, from 0 to 10?')
   const [validationError, setValidationError] = useState('')
   const [detailedErrors, setDetailedErrors] = useState<DetailedError[]>([])
   const [generationSummary, setGenerationSummary] = useState<{successCount: number, totalCount: number} | null>(null)
