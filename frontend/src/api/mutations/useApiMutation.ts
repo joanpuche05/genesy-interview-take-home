@@ -130,5 +130,11 @@ const apiMutationsOptions = (queryClient: QueryClient) =>
           queryClient.invalidateQueries({ queryKey: ['leads', 'getMany'] })
         },
       }),
+      generateMessages: makeOptions({
+        mutationFn: api.leads.generateMessages,
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['leads', 'getMany'] })
+        },
+      }),
     },
   }) as const satisfies MutationsApi<typeof api>

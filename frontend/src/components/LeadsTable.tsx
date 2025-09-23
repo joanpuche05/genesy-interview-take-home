@@ -3,10 +3,13 @@ import { FC, useState, useRef, useEffect } from 'react'
 import { api } from '../api'
 import { useApiMutation } from '../api/mutations/useApiMutation'
 import { MessageCellWrapper } from './MessageCell'
+import { MessageTemplateModal } from './MessageTemplateModal'
 
 export const LeadsTable: FC = () => {
   const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showMessageModal, setShowMessageModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const selectAllRef = useRef<HTMLInputElement>(null)
 
   const leads = useQuery({
@@ -53,6 +56,24 @@ export const LeadsTable: FC = () => {
     setShowDeleteConfirm(false)
   }
 
+  const handleSendMessagesClick = () => {
+    setShowMessageModal(true)
+  }
+
+  const handleModalClose = () => {
+    setShowMessageModal(false)
+  }
+
+  const handleMessageSuccess = (successCount: number, totalCount: number) => {
+    leads.refetch()
+    if (successCount === totalCount) {
+      setSuccessMessage(`Generated ${successCount} messages successfully`)
+    } else {
+      setSuccessMessage(`Generated ${successCount} of ${totalCount} messages (${totalCount - successCount} failed)`)
+    }
+    setTimeout(() => setSuccessMessage(''), 5000)
+  }
+
   const isAllSelected = leads.data ? selectedLeads.size === leads.data.length && leads.data.length > 0 : false
   const isIndeterminate = selectedLeads.size > 0 && !isAllSelected
 
@@ -78,6 +99,12 @@ export const LeadsTable: FC = () => {
             <div className="selection-counter">
               {selectedLeads.size} selected
             </div>
+            <button
+              className="send-messages-button"
+              onClick={handleSendMessagesClick}
+            >
+              Send Messages
+            </button>
             <button
               className="delete-button"
               onClick={handleDeleteClick}
@@ -173,6 +200,19 @@ export const LeadsTable: FC = () => {
           No leads found.
         </div>
       )}
+
+      {successMessage && (
+        <div className="success-message">
+          {successMessage}
+        </div>
+      )}
+
+      <MessageTemplateModal
+        isOpen={showMessageModal}
+        onClose={handleModalClose}
+        selectedLeads={selectedLeads}
+        onSuccess={handleMessageSuccess}
+      />
     </div>
   )
 }
