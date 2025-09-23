@@ -66,11 +66,7 @@ export const LeadsTable: FC = () => {
 
   const handleMessageSuccess = (successCount: number, totalCount: number) => {
     leads.refetch()
-    if (successCount === totalCount) {
-      setSuccessMessage(`Generated ${successCount} messages successfully`)
-    } else {
-      setSuccessMessage(`Generated ${successCount} of ${totalCount} messages (${totalCount - successCount} failed)`)
-    }
+    setSuccessMessage(`Generated ${successCount} messages successfully`)
     setTimeout(() => setSuccessMessage(''), 5000)
   }
 
@@ -103,7 +99,7 @@ export const LeadsTable: FC = () => {
               className="send-messages-button"
               onClick={handleSendMessagesClick}
             >
-              Send Messages
+              Generate Messages
             </button>
             <button
               className="delete-button"
@@ -211,6 +207,7 @@ export const LeadsTable: FC = () => {
         isOpen={showMessageModal}
         onClose={handleModalClose}
         selectedLeads={selectedLeads}
+        leadsData={leads.data || []}
         onSuccess={handleMessageSuccess}
       />
     </div>

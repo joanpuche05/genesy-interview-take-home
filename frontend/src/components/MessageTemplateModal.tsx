@@ -1,11 +1,20 @@
 import { FC, useState, useEffect, useRef } from 'react'
 import { useApiMutation } from '../api/mutations/useApiMutation'
 import { GenerateMessagesInput } from '../api/types/leads/generateMessages'
+import { ApiOutput } from '../api'
+import { api } from '../api'
+
+interface DetailedError {
+  leadId: number
+  leadName: string
+  error: string
+}
 
 interface MessageTemplateModalProps {
   isOpen: boolean
   onClose: () => void
   selectedLeads: Set<number>
+  leadsData: ApiOutput<typeof api.leads.getMany>
   onSuccess: (successCount: number, totalCount: number) => void
 }
 
@@ -13,10 +22,13 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
   isOpen,
   onClose,
   selectedLeads,
+  leadsData,
   onSuccess,
 }) => {
   const [template, setTemplate] = useState('')
   const [validationError, setValidationError] = useState('')
+  const [detailedErrors, setDetailedErrors] = useState<DetailedError[]>([])
+  const [generationSummary, setGenerationSummary] = useState<{successCount: number, totalCount: number} | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -59,8 +71,29 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
       onSuccess: (result) => {
         const successCount = result.results.filter(r => r.success).length
         const totalCount = result.results.length
-        onSuccess(successCount, totalCount)
-        handleClose()
+        const failedResults = result.results.filter(r => !r.success)
+        
+        // Always set the summary when we get results
+        setGenerationSummary({ successCount, totalCount })
+        
+        if (failedResults.length > 0) {
+          // Create detailed error messages
+          const errors: DetailedError[] = failedResults.map(failedResult => {
+            const lead = leadsData.find(l => l.id === failedResult.leadId)
+            const leadName = lead ? `${lead.firstName}${lead.lastName ? ' ' + lead.lastName : ''}` : `Lead ${failedResult.leadId}`
+            return {
+              leadId: failedResult.leadId,
+              leadName,
+              error: failedResult.error || 'Unknown error'
+            }
+          })
+          setDetailedErrors(errors)
+          // Don't close modal when there are errors
+        } else {
+          // Only close modal when all messages succeed
+          onSuccess(successCount, totalCount)
+          handleClose()
+        }
       }
     })
   }
@@ -68,6 +101,8 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
   const handleClose = () => {
     setTemplate('')
     setValidationError('')
+    setDetailedErrors([])
+    setGenerationSummary(null)
     generateMessagesMutation.reset()
     onClose()
   }
@@ -182,7 +217,43 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
             )}
           </div>
 
-          {hasError && (
+          {generationSummary && (
+            <div className="generation-summary-section">
+              <h4 className="generation-summary-title">Generation Results:</h4>
+              <div className="generation-summary-content">
+                <span className="summary-success">
+                  {generationSummary.successCount} succeeded
+                </span>
+                {generationSummary.successCount < generationSummary.totalCount && (
+                  <>
+                    <span className="summary-separator"> • </span>
+                    <span className="summary-failed">
+                      {generationSummary.totalCount - generationSummary.successCount} failed
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {detailedErrors.length > 0 && (
+            <div className="detailed-errors-section">
+              <h4 className="detailed-errors-title">Error Details:</h4>
+              <div className="detailed-errors-list">
+                {detailedErrors.map((error) => (
+                  <div key={error.leadId} className="detailed-error-item">
+                    Message for <strong>{error.leadName}</strong> was not generated because{' '}
+                    {error.error.toLowerCase().includes('missing') 
+                      ? `these fields are missing: ${error.error.replace(/^Missing field[s]?: /i, '')}`
+                      : error.error.toLowerCase()
+                    }
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {hasError && !detailedErrors.length && (
             <div className="template-api-error" role="alert">
               Error: {generateMessagesMutation.error?.message || 'Failed to generate messages'}
             </div>

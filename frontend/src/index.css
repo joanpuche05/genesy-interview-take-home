@@ -615,6 +615,74 @@ button:focus-visible {
   font-size: 0.9rem;
 }
 
+.detailed-errors-section {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 4px;
+}
+
+.detailed-errors-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ff6b6b;
+}
+
+.detailed-errors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detailed-error-item {
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.detailed-error-item strong {
+  color: #ffffff;
+}
+
+.generation-summary-section {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(100, 108, 255, 0.1);
+  border: 1px solid rgba(100, 108, 255, 0.3);
+  border-radius: 4px;
+}
+
+.generation-summary-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #646cff;
+}
+
+.generation-summary-content {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.summary-success {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.summary-failed {
+  color: #ff6b6b;
+  font-weight: 500;
+}
+
+.summary-separator {
+  color: rgba(255, 255, 255, 0.5);
+}
+
 .message-template-footer {
   display: flex;
   gap: 1rem;
@@ -774,6 +842,45 @@ button:focus-visible {
     background-color: rgba(220, 53, 69, 0.05);
     border: 1px solid rgba(220, 53, 69, 0.2);
     color: #dc3545;
+  }
+
+  .detailed-errors-section {
+    background-color: rgba(220, 53, 69, 0.05);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+  }
+
+  .detailed-errors-title {
+    color: #dc3545;
+  }
+
+  .detailed-error-item {
+    background-color: rgba(0, 0, 0, 0.02);
+    color: #dc3545;
+  }
+
+  .detailed-error-item strong {
+    color: #212529;
+  }
+
+  .generation-summary-section {
+    background-color: rgba(100, 108, 255, 0.05);
+    border: 1px solid rgba(100, 108, 255, 0.2);
+  }
+
+  .generation-summary-title {
+    color: #646cff;
+  }
+
+  .summary-success {
+    color: #198754;
+  }
+
+  .summary-failed {
+    color: #dc3545;
+  }
+
+  .summary-separator {
+    color: rgba(0, 0, 0, 0.4);
   }
 
   .message-template-footer {
