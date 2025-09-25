@@ -2,10 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import { FC, useState, useRef, useEffect } from 'react'
 import { api } from '../api'
 import { useApiMutation } from '../api/mutations/useApiMutation'
+import { MessageCellWrapper } from './MessageCell'
+import { MessageTemplateModal } from './MessageTemplateModal'
 
 export const LeadsTable: FC = () => {
   const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showMessageModal, setShowMessageModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const selectAllRef = useRef<HTMLInputElement>(null)
 
   const leads = useQuery({
@@ -52,6 +56,20 @@ export const LeadsTable: FC = () => {
     setShowDeleteConfirm(false)
   }
 
+  const handleSendMessagesClick = () => {
+    setShowMessageModal(true)
+  }
+
+  const handleModalClose = () => {
+    setShowMessageModal(false)
+  }
+
+  const handleMessageSuccess = (successCount: number, totalCount: number) => {
+    leads.refetch()
+    setSuccessMessage(`Generated ${successCount} messages successfully`)
+    setTimeout(() => setSuccessMessage(''), 5000)
+  }
+
   const isAllSelected = leads.data ? selectedLeads.size === leads.data.length && leads.data.length > 0 : false
   const isIndeterminate = selectedLeads.size > 0 && !isAllSelected
 
@@ -77,6 +95,12 @@ export const LeadsTable: FC = () => {
             <div className="selection-counter">
               {selectedLeads.size} selected
             </div>
+            <button
+              className="send-messages-button"
+              onClick={handleSendMessagesClick}
+            >
+              Generate Messages
+            </button>
             <button
               className="delete-button"
               onClick={handleDeleteClick}
@@ -157,7 +181,9 @@ export const LeadsTable: FC = () => {
                 <td>{lead.firstName}</td>
                 <td>{lead.lastName || '-'}</td>
                 <td>{lead.countryCode || '-'}</td>
-                <td>-</td>
+                <td className="message-column">
+                  <MessageCellWrapper message={lead.message} />
+                </td>
                 <td>{formatDate(lead.createdAt)}</td>
               </tr>
             ))}
@@ -170,6 +196,20 @@ export const LeadsTable: FC = () => {
           No leads found.
         </div>
       )}
+
+      {successMessage && (
+        <div className="success-message">
+          {successMessage}
+        </div>
+      )}
+
+      <MessageTemplateModal
+        isOpen={showMessageModal}
+        onClose={handleModalClose}
+        selectedLeads={selectedLeads}
+        leadsData={leads.data || []}
+        onSuccess={handleMessageSuccess}
+      />
     </div>
   )
 }

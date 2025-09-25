@@ -4,6 +4,7 @@ import { LeadsBulkDeleteInput, LeadsBulkDeleteOutput } from '../types/leads/bulk
 import { LeadsGetManyInput, LeadsGetManyOutput } from '../types/leads/getMany'
 import { LeadsGetOneInput, LeadsGetOneOutput } from '../types/leads/getOne'
 import { LeadsUpdateInput, LeadsUpdateOutput } from '../types/leads/update'
+import { GenerateMessagesInput, GenerateMessagesOutput } from '../types/leads/generateMessages'
 import { ApiModule, endpoint } from '../utils'
 
 export const leadsApi = {
@@ -13,4 +14,5 @@ export const leadsApi = {
   delete: endpoint<LeadsDeleteOutput, LeadsDeleteInput>('delete', ({ id }) => `/leads/${id}`),
   bulkDelete: endpoint<LeadsBulkDeleteOutput, LeadsBulkDeleteInput>('post', '/leads/bulk-delete'),
   update: endpoint<LeadsUpdateOutput, LeadsUpdateInput>('put', ({ id }) => `/leads/${id}`),
+  generateMessages: endpoint<GenerateMessagesOutput, GenerateMessagesInput>('post', '/leads/generate-messages'),
 } as const satisfies ApiModule
