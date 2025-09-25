@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { FC, useState, useRef, useEffect } from 'react'
 import { api } from '../api'
 import { useApiMutation } from '../api/mutations/useApiMutation'
+import { GuessGenderOutput } from '../api/types/leads/guessGender'
 import { MessageCellWrapper } from './MessageCell'
 import { MessageTemplateModal } from './MessageTemplateModal'
 
@@ -10,6 +11,8 @@ export const LeadsTable: FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showMessageModal, setShowMessageModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [genderErrors, setGenderErrors] = useState<Array<{leadId: number, leadName: string, error: string}>>([])
   const selectAllRef = useRef<HTMLInputElement>(null)
 
   const leads = useQuery({
@@ -18,6 +21,7 @@ export const LeadsTable: FC = () => {
   })
 
   const bulkDeleteMutation = useApiMutation('leads.bulkDelete')
+  const guessGenderMutation = useApiMutation('leads.guessGender')
 
   const handleSelectLead = (leadId: number, checked: boolean) => {
     const newSelection = new Set(selectedLeads)
@@ -48,6 +52,8 @@ export const LeadsTable: FC = () => {
       onSuccess: () => {
         setSelectedLeads(new Set())
         setShowDeleteConfirm(false)
+        setGenderErrors([]) // Clear any gender errors
+        setErrorMessage('')
       }
     })
   }
@@ -66,8 +72,63 @@ export const LeadsTable: FC = () => {
 
   const handleMessageSuccess = (successCount: number, totalCount: number) => {
     leads.refetch()
-    setSuccessMessage(`Generated ${successCount} messages successfully`)
+    setSuccessMessage(`Generated ${successCount} of ${totalCount} messages successfully`)
+    setErrorMessage('')
+    setGenderErrors([]) // Clear any gender errors
     setTimeout(() => setSuccessMessage(''), 5000)
+  }
+
+  const handleGuessGenderClick = () => {
+    const leadIds = Array.from(selectedLeads)
+    guessGenderMutation.mutate({ leadIds }, {
+      onSuccess: (data: GuessGenderOutput) => {
+        leads.refetch()
+        const successCount = data.results.filter((result) => result.success).length
+        const failedResults = data.results.filter((result) => !result.success)
+        const failedCount = failedResults.length
+        
+        // Collect error details for failed predictions
+        const errorDetails = failedResults.map((result) => {
+          const lead = leads.data?.find(l => l.id === result.leadId)
+          const firstName = lead?.firstName || ''
+          return {
+            leadId: result.leadId,
+            leadName: firstName,
+            error: result.error || 'Unknown error'
+          }
+        })
+        
+        // Set success message if there are any successful predictions
+        if (successCount > 0) {
+          setSuccessMessage(`Successfully predicted gender for ${successCount} lead(s)`)
+        } else {
+          setSuccessMessage('')
+        }
+        
+        // Set error message if there are any failed predictions
+        if (failedCount > 0) {
+          setErrorMessage(`Error predicting gender for ${failedCount} lead(s)`)
+          setGenderErrors(errorDetails)
+        } else {
+          setErrorMessage('')
+          setGenderErrors([])
+        }
+        
+        // Clear messages after 8 seconds (longer for errors)
+        setTimeout(() => {
+          setSuccessMessage('')
+          setErrorMessage('')
+          setGenderErrors([])
+        }, 8000)
+        
+        setSelectedLeads(new Set())
+      },
+      onError: (error) => {
+        console.error('Gender guessing error:', error)
+        setErrorMessage('')
+        setGenderErrors([])
+      }
+    })
   }
 
   const isAllSelected = leads.data ? selectedLeads.size === leads.data.length && leads.data.length > 0 : false
@@ -100,6 +161,13 @@ export const LeadsTable: FC = () => {
               onClick={handleSendMessagesClick}
             >
               Generate Messages
+            </button>
+            <button
+              className="guess-gender-button"
+              onClick={handleGuessGenderClick}
+              disabled={guessGenderMutation.isPending}
+            >
+              {guessGenderMutation.isPending ? 'Guessing...' : 'Guess Gender'}
             </button>
             <button
               className="delete-button"
@@ -162,6 +230,7 @@ export const LeadsTable: FC = () => {
               <th>First name</th>
               <th>Last name</th>
               <th>Country</th>
+              <th>Gender</th>
               <th>Message</th>
               <th>Created at</th>
             </tr>
@@ -181,6 +250,7 @@ export const LeadsTable: FC = () => {
                 <td>{lead.firstName}</td>
                 <td>{lead.lastName || '-'}</td>
                 <td>{lead.countryCode || '-'}</td>
+                <td>{lead.gender ? lead.gender.charAt(0).toUpperCase() + lead.gender.slice(1) : '-'}</td>
                 <td className="message-column">
                   <MessageCellWrapper message={lead.message} />
                 </td>
@@ -200,6 +270,30 @@ export const LeadsTable: FC = () => {
       {successMessage && (
         <div className="success-message">
           {successMessage}
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="error-message" style={{top: successMessage ? '6rem' : '2rem'}}>
+          {errorMessage}
+          {genderErrors.length > 0 && (
+            <div className="error-details">
+              <ul className="error-details-list">
+                {genderErrors.map((error, index) => (
+                  <li key={index} className="error-detail-item">
+                    <strong>Lead {error.leadId}</strong>
+                    {error.leadName && <span> ({error.leadName})</span>}: {error.error}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {guessGenderMutation.isError && (
+        <div className="error-message" style={{top: successMessage || errorMessage ? '10rem' : '2rem'}}>
+          Error: {guessGenderMutation.error?.message || 'Failed to guess gender'}
         </div>
       )}
 
