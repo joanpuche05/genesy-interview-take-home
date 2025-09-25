@@ -781,6 +781,135 @@ button:focus-visible {
   opacity: 0.6;
 }
 
+.guess-gender-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-left: 1rem;
+}
+
+.guess-gender-button:hover:not(:disabled) {
+  background-color: #218838;
+  border-color: transparent;
+}
+
+.guess-gender-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* --------------------------------- */
+/* Enrich Dropdown Styles */
+/* --------------------------------- */
+
+.enrich-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.enrich-dropdown-button {
+  background-color: #646cff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.enrich-dropdown-button:hover:not(:disabled) {
+  background-color: #535bf2;
+}
+
+.enrich-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  min-width: 120px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.enrich-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.enrich-dropdown-item:first-child {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.enrich-dropdown-item:last-child {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.enrich-dropdown-item:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.enrich-dropdown-item:disabled {
+  color: rgba(255, 255, 255, 0.5);
+  cursor: not-allowed;
+}
+
+/* Light mode styles for dropdown */
+@media (prefers-color-scheme: light) {
+  .enrich-dropdown-menu {
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .enrich-dropdown-item {
+    color: #212529;
+  }
+
+  .enrich-dropdown-item:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .enrich-dropdown-item:disabled {
+    color: rgba(0, 0, 0, 0.4);
+  }
+}
+
 .success-message {
   position: fixed;
   top: 2rem;
@@ -794,6 +923,41 @@ button:focus-visible {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 1100;
   animation: slideInRight 0.3s ease-out;
+  min-width: 300px;
+}
+
+.error-message {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  background-color: #dc3545;
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1100;
+  animation: slideInRight 0.3s ease-out;
+  min-width: 300px;
+}
+
+.error-details {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.error-details-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.error-detail-item {
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 @keyframes slideInRight {

@@ -91,6 +91,7 @@ const apiMutationsOptions = (queryClient: QueryClient) =>
             countryCode: null,
             companyName: null,
             message: null,
+            gender: null,
           }
           const newLeads: ApiOutput<typeof api.leads.getMany> = [...(previousValue ?? []), newLead]
 
@@ -132,6 +133,12 @@ const apiMutationsOptions = (queryClient: QueryClient) =>
       }),
       generateMessages: makeOptions({
         mutationFn: api.leads.generateMessages,
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['leads', 'getMany'] })
+        },
+      }),
+      guessGender: makeOptions({
+        mutationFn: api.leads.guessGender,
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['leads', 'getMany'] })
         },

@@ -226,5 +226,142 @@ export const createApp = (testPrisma?: any) => {
     }
   })
 
+  app.post('/leads/guess-gender', async (req: Request, res: Response) => {
+    try {
+      const { leadIds } = req.body
+
+      if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
+        return res.status(400).json({
+          error: 'Invalid request',
+          details: 'leadIds must be a non-empty array of numbers'
+        })
+      }
+
+      const validIds = leadIds.filter(id => typeof id === 'number' && id > 0 && Number.isInteger(id))
+      if (validIds.length !== leadIds.length) {
+        return res.status(400).json({
+          error: 'Invalid lead IDs',
+          details: 'All leadIds must be positive numbers'
+        })
+      }
+
+      // Fetch leads from database
+      const leads = await prisma.lead.findMany({
+        where: {
+          id: {
+            in: validIds,
+          },
+        },
+      })
+
+      const results: Array<{
+        leadId: number
+        success: boolean
+        gender?: string
+        probability?: number
+        error?: string
+      }> = []
+
+      // Process leads in batches of 10 for genderize.io API
+      const batchSize = 10
+      for (let i = 0; i < validIds.length; i += batchSize) {
+        const batchLeadIds = validIds.slice(i, i + batchSize)
+        const batchLeads = batchLeadIds.map(id => leads.find((l: any) => l.id === id)).filter(Boolean)
+
+        // Prepare batch request for genderize.io
+        const namesForApi = batchLeads
+          .filter(lead => lead?.firstName && lead.firstName.trim())
+          .map((lead, index) => ({ name: lead!.firstName.trim(), leadId: lead!.id }))
+
+        if (namesForApi.length > 0) {
+          try {
+            // Build query string for batch request
+            const queryParams = namesForApi.map(item => `name[]=${encodeURIComponent(item.name)}`).join('&')
+            const apiUrl = `https://api.genderize.io?${queryParams}`
+
+            const response = await fetch(apiUrl)
+            
+            if (!response.ok) {
+              throw new Error(`Genderize API error: ${response.status}`)
+            }
+
+            const genderData = await response.json()
+            const genderResults = Array.isArray(genderData) ? genderData : [genderData]
+
+            // Process API results and update database
+            for (let j = 0; j < genderResults.length; j++) {
+              const result = genderResults[j]
+              const correspondingItem = namesForApi[j]
+              
+              if (result && result.gender && correspondingItem) {
+                // Update lead in database with gender prediction
+                await prisma.lead.update({
+                  where: { id: correspondingItem.leadId },
+                  data: { gender: result.gender }
+                })
+
+                results.push({
+                  leadId: correspondingItem.leadId,
+                  success: true,
+                  gender: result.gender,
+                  probability: result.probability
+                })
+              } else {
+                results.push({
+                  leadId: correspondingItem?.leadId || 0,
+                  success: false,
+                  error: 'No gender prediction available'
+                })
+              }
+            }
+          } catch (error) {
+            console.error('Genderize API error:', error)
+            // Add failed results for this batch
+            namesForApi.forEach(item => {
+              results.push({
+                leadId: item.leadId,
+                success: false,
+                error: 'Gender prediction service unavailable'
+              })
+            })
+          }
+        }
+
+        // Handle leads without firstName or empty firstName
+        batchLeadIds.forEach(leadId => {
+          const lead = leads.find((l: any) => l.id === leadId)
+          const hasResult = results.some(r => r.leadId === leadId)
+          
+          if (!hasResult) {
+            if (!lead) {
+              results.push({
+                leadId,
+                success: false,
+                error: 'Lead not found'
+              })
+            } else if (!lead.firstName || !lead.firstName.trim()) {
+              results.push({
+                leadId,
+                success: false,
+                error: 'Missing firstName'
+              })
+            }
+          }
+        })
+      }
+
+      // Sort results by leadId to maintain order
+      results.sort((a, b) => a.leadId - b.leadId)
+
+      res.status(200).json({ results })
+    } catch (error) {
+      console.error('Guess gender error:', error)
+      res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to guess gender'
+      })
+    }
+  })
+
   return app
 }
