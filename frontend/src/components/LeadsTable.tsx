@@ -13,7 +13,9 @@ export const LeadsTable: FC = () => {
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [genderErrors, setGenderErrors] = useState<Array<{leadId: number, leadName: string, error: string}>>([])
+  const [showEnrichDropdown, setShowEnrichDropdown] = useState(false)
   const selectAllRef = useRef<HTMLInputElement>(null)
+  const enrichDropdownRef = useRef<HTMLDivElement>(null)
 
   const leads = useQuery({
     queryKey: ['leads', 'getMany'],
@@ -129,6 +131,19 @@ export const LeadsTable: FC = () => {
         setGenderErrors([])
       }
     })
+    setShowEnrichDropdown(false)
+  }
+
+  const handleEnrichDropdownToggle = () => {
+    setShowEnrichDropdown(!showEnrichDropdown)
+  }
+
+  const handleEnrichOptionClick = (option: 'gender' | 'message') => {
+    if (option === 'gender') {
+      handleGuessGenderClick()
+    } else if (option === 'message') {
+      handleSendMessagesClick()
+    }
   }
 
   const isAllSelected = leads.data ? selectedLeads.size === leads.data.length && leads.data.length > 0 : false
@@ -139,6 +154,22 @@ export const LeadsTable: FC = () => {
       selectAllRef.current.indeterminate = isIndeterminate
     }
   }, [isIndeterminate])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (enrichDropdownRef.current && !enrichDropdownRef.current.contains(event.target as Node)) {
+        setShowEnrichDropdown(false)
+      }
+    }
+
+    if (showEnrichDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showEnrichDropdown])
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
@@ -156,19 +187,31 @@ export const LeadsTable: FC = () => {
             <div className="selection-counter">
               {selectedLeads.size} selected
             </div>
-            <button
-              className="send-messages-button"
-              onClick={handleSendMessagesClick}
-            >
-              Generate Messages
-            </button>
-            <button
-              className="guess-gender-button"
-              onClick={handleGuessGenderClick}
-              disabled={guessGenderMutation.isPending}
-            >
-              {guessGenderMutation.isPending ? 'Guessing...' : 'Guess Gender'}
-            </button>
+            <div className="enrich-dropdown-container" ref={enrichDropdownRef}>
+              <button
+                className="enrich-dropdown-button"
+                onClick={handleEnrichDropdownToggle}
+              >
+                Enrich ▼
+              </button>
+              {showEnrichDropdown && (
+                <div className="enrich-dropdown-menu">
+                  <button
+                    className="enrich-dropdown-item"
+                    onClick={() => handleEnrichOptionClick('gender')}
+                    disabled={guessGenderMutation.isPending}
+                  >
+                    {guessGenderMutation.isPending ? 'Guessing...' : 'Gender'}
+                  </button>
+                  <button
+                    className="enrich-dropdown-item"
+                    onClick={() => handleEnrichOptionClick('message')}
+                  >
+                    Message
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               className="delete-button"
               onClick={handleDeleteClick}
