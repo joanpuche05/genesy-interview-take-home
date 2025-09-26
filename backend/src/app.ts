@@ -1,10 +1,29 @@
 import { PrismaClient } from '@prisma/client'
 import express, { Request, Response } from 'express'
+import multer from 'multer'
+import csvParser from 'csv-parser'
+import fs from 'fs'
+import path from 'path'
 
 export const createApp = (testPrisma?: any) => {
   const prisma = testPrisma || new PrismaClient()
   const app = express()
   app.use(express.json())
+
+  // Configure multer for file uploads
+  const upload = multer({
+    dest: 'uploads/',
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+        cb(null, true)
+      } else {
+        cb(new Error('Only CSV files are allowed') as any)
+      }
+    },
+    limits: {
+      fileSize: 10 * 1024 * 1024 // 10MB limit
+    }
+  })
 
   app.use(function (req, res, next) {
     res.header('Access-Control-Allow-Origin', '*')
@@ -360,6 +379,178 @@ export const createApp = (testPrisma?: any) => {
         error: 'Internal server error',
         details: 'Failed to guess gender'
       })
+    }
+  })
+
+  // Helper function for logging import results
+  const logImportResult = (filename: string, result: any) => {
+    const logsDir = path.join(__dirname, '../logs')
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true })
+    }
+    
+    const logFile = path.join(logsDir, `import-${Date.now()}.log`)
+    const logData = {
+      timestamp: new Date().toISOString(),
+      filename,
+      ...result
+    }
+    fs.writeFileSync(logFile, JSON.stringify(logData, null, 2))
+  }
+
+  // Helper function to validate email format
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  app.post('/leads/import-csv', upload.single('file'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No CSV file uploaded',
+          imported: 0,
+          errors: 1
+        })
+      }
+
+      const filePath = req.file.path
+      const results: any[] = []
+      let imported = 0
+      let errors = 0
+      const errorDetails: string[] = []
+
+      // Get existing leads to check for duplicates
+      const existingLeads = await prisma.lead.findMany({
+        select: { firstName: true, lastName: true }
+      })
+      
+      const existingCombinations = new Set(
+        existingLeads.map((lead: { firstName: string; lastName: string | null }) => `${lead.firstName?.toLowerCase() || ''}|${lead.lastName?.toLowerCase() || ''}`)
+      )
+
+      // Parse CSV file
+      await new Promise<void>((resolve, reject) => {
+        const stream = fs.createReadStream(filePath)
+          .pipe(csvParser())
+          .on('data', (row) => {
+            results.push(row)
+          })
+          .on('end', resolve)
+          .on('error', reject)
+      })
+
+      // Process each row
+      for (let i = 0; i < results.length; i++) {
+        const row = results[i]
+        const rowNum = i + 2 // Account for header row
+
+        try {
+          // Validate required fields: firstName, lastName, email
+          if (!row.firstName || typeof row.firstName !== 'string' || !row.firstName.trim()) {
+            errors++
+            errorDetails.push(`Row ${rowNum}: Missing required firstName`)
+            continue
+          }
+
+          if (!row.lastName || typeof row.lastName !== 'string' || !row.lastName.trim()) {
+            errors++
+            errorDetails.push(`Row ${rowNum}: Missing required lastName`)
+            continue
+          }
+
+          if (!row.email || typeof row.email !== 'string' || !row.email.trim()) {
+            errors++
+            errorDetails.push(`Row ${rowNum}: Missing required email`)
+            continue
+          }
+
+          // Validate email format
+          if (!isValidEmail(row.email)) {
+            errors++
+            errorDetails.push(`Row ${rowNum}: Invalid email format`)
+            continue
+          }
+
+          // Check for duplicates based on firstName + lastName combination
+          const duplicateKey = `${row.firstName.toLowerCase().trim()}|${row.lastName.toLowerCase().trim()}`
+          if (existingCombinations.has(duplicateKey)) {
+            errors++
+            errorDetails.push(`Row ${rowNum}: Duplicate lead (${row.firstName} ${row.lastName})`)
+            continue
+          }
+
+          // Create lead data object with required fields
+          const leadData: any = {
+            firstName: row.firstName.trim(),
+            lastName: row.lastName.trim(),
+            email: row.email.trim()
+          }
+
+          // Add optional fields if they exist and are not empty
+          if (row.jobTitle && row.jobTitle.trim()) {
+            leadData.jobTitle = row.jobTitle.trim()
+          }
+          if (row.countryCode && row.countryCode.trim()) {
+            leadData.countryCode = row.countryCode.trim()
+          }
+          if (row.companyName && row.companyName.trim()) {
+            leadData.companyName = row.companyName.trim()
+          }
+          if (row.gender && row.gender.trim()) {
+            leadData.gender = row.gender.trim()
+          }
+
+          // Create lead in database
+          await prisma.lead.create({ data: leadData })
+          
+          // Add to existing combinations to prevent duplicates within the same import
+          existingCombinations.add(duplicateKey)
+          imported++
+
+        } catch (error) {
+          errors++
+          errorDetails.push(`Row ${rowNum}: Database error - ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
+      }
+
+      // Clean up uploaded file
+      fs.unlinkSync(filePath)
+
+      const result = {
+        success: true,
+        imported,
+        errors,
+        message: `Import completed. ${imported} leads imported, ${errors} errors.`,
+        errorDetails: errors > 0 ? errorDetails : undefined
+      }
+
+      // Log import results
+      logImportResult(req.file.originalname, result)
+
+      res.status(200).json(result)
+
+    } catch (error) {
+      // Clean up uploaded file if it exists
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path)
+      }
+
+      console.error('CSV import error:', error)
+      
+      const errorResult = {
+        success: false,
+        imported: 0,
+        errors: 1,
+        message: 'CSV import failed',
+        errorDetails: [error instanceof Error ? error.message : 'Unknown error']
+      }
+
+      // Log error
+      logImportResult(req.file?.originalname || 'unknown', errorResult)
+
+      res.status(500).json(errorResult)
     }
   })
 
