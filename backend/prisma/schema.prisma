@@ -7,7 +7,7 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-model lead {
+model Lead {
   id          Int      @id @default(autoincrement())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -19,4 +19,42 @@ model lead {
   companyName String?
   message     String?
   gender      String?
+  
+  // Import tracking
+  importReport   ImportReport? @relation("ImportedLeads", fields: [importReportId], references: [id])
+  importReportId Int?
+}
+
+model ImportReport {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // File metadata
+  filename    String
+  fileSize    Int
+  
+  // Import statistics  
+  totalRows   Int
+  imported    Int
+  errors      Int
+  
+  // Result summary
+  success     Boolean
+  message     String
+  
+  // Relations
+  importErrors ImportError[]
+  leads        Lead[]        @relation("ImportedLeads")
+}
+
+model ImportError {
+  id             Int          @id @default(autoincrement())
+  importReport   ImportReport @relation(fields: [importReportId], references: [id], onDelete: Cascade)
+  importReportId Int
+  
+  rowNumber      Int
+  errorType      String  // 'MISSING_FIELD', 'INVALID_EMAIL', 'DUPLICATE', 'DATABASE_ERROR'
+  errorMessage   String
+  rowData        String? // JSON string of original row data for debugging
 }
