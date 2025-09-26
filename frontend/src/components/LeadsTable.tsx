@@ -5,11 +5,13 @@ import { useApiMutation } from '../api/mutations/useApiMutation'
 import { GuessGenderOutput } from '../api/types/leads/guessGender'
 import { MessageCellWrapper } from './MessageCell'
 import { MessageTemplateModal } from './MessageTemplateModal'
+import { CSVImportModal } from './CSVImportModal'
 
 export const LeadsTable: FC = () => {
   const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showMessageModal, setShowMessageModal] = useState(false)
+  const [showCSVImportModal, setShowCSVImportModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [genderErrors, setGenderErrors] = useState<Array<{leadId: number, leadName: string, error: string}>>([])
@@ -70,6 +72,28 @@ export const LeadsTable: FC = () => {
 
   const handleModalClose = () => {
     setShowMessageModal(false)
+  }
+
+  const handleCSVImportClick = () => {
+    setShowCSVImportModal(true)
+  }
+
+  const handleCSVImportClose = () => {
+    setShowCSVImportModal(false)
+  }
+
+  const handleCSVImportSuccess = (imported: number, errors: number) => {
+    leads.refetch()
+    if (imported > 0) {
+      setSuccessMessage(`Successfully imported ${imported} lead${imported !== 1 ? 's' : ''}${errors > 0 ? ` (${errors} error${errors !== 1 ? 's' : ''})` : ''}`)
+    } else {
+      setErrorMessage(`Import failed${errors > 0 ? ` (${errors} error${errors !== 1 ? 's' : ''})` : ''}`)
+    }
+    setGenderErrors([])
+    setTimeout(() => {
+      setSuccessMessage('')
+      setErrorMessage('')
+    }, 5000)
   }
 
   const handleMessageSuccess = (successCount: number, totalCount: number) => {
@@ -182,8 +206,9 @@ export const LeadsTable: FC = () => {
     <div className="leads-table-container">
       <div className="leads-table-header">
         <h2 className="leads-table-title">All leads</h2>
-        {selectedLeads.size > 0 && (
-          <div className="selection-actions">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {selectedLeads.size > 0 && (
+            <div className="selection-actions">
             <div className="selection-counter">
               {selectedLeads.size} selected
             </div>
@@ -219,8 +244,15 @@ export const LeadsTable: FC = () => {
             >
               {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete'}
             </button>
-          </div>
-        )}
+            </div>
+          )}
+          <button
+            className="import-csv-button"
+            onClick={handleCSVImportClick}
+          >
+            Import CSV
+          </button>
+        </div>
       </div>
 
       {showDeleteConfirm && (
@@ -346,6 +378,12 @@ export const LeadsTable: FC = () => {
         selectedLeads={selectedLeads}
         leadsData={leads.data || []}
         onSuccess={handleMessageSuccess}
+      />
+
+      <CSVImportModal
+        isOpen={showCSVImportModal}
+        onClose={handleCSVImportClose}
+        onSuccess={handleCSVImportSuccess}
       />
     </div>
   )
