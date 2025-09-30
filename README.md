@@ -195,3 +195,10 @@ The application expects CSV files with the following headers:
 - `gender` (optional)
 
 Sample CSV files are available in the `docs/` directory.
+
+### Import Logging
+
+CSV import operations are automatically logged to help track import history and troubleshoot issues:
+
+- **Log Location**: `backend/logs/import-{timestamp}.log`
+- **Log Format**: JSON files containing import timestamp, filename, success count, error count, and detailed error messages
